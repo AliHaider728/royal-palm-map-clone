@@ -1,9 +1,8 @@
 import { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { plotData, MAP_CENTER, MAP_ZOOM, landmarks, type PlotData } from '@/data/plotData';
+import { MAP_CENTER, MAP_ZOOM, landmarks } from '@/data/plotData';
 
-// Fix default marker icons
 delete (L.Icon.Default.prototype as any)._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
@@ -11,46 +10,43 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
 });
 
-const statusColors: Record<string, string> = {
-  available: '#22c55e',
-  sold: '#ef4444',
-  reserved: '#f59e0b',
-  commercial: '#3b82f6',
-};
+interface Property {
+  id: string;
+  title: string;
+  price: number;
+  listing_type: string;
+  property_type: string;
+  location: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  area: string | null;
+  bedrooms: number;
+  bathrooms: number;
+  profiles?: { company_name: string | null; full_name: string | null; phone: string | null } | null;
+}
 
 interface MapViewProps {
   searchQuery: string;
-  selectedBlock: string | null;
-  onPlotSelect: (plot: PlotData) => void;
+  properties: Property[];
+  onPropertySelect: (property: Property) => void;
 }
 
-const MapView = ({ searchQuery, selectedBlock, onPlotSelect }: MapViewProps) => {
+const MapView = ({ searchQuery, properties, onPropertySelect }: MapViewProps) => {
   const mapRef = useRef<L.Map | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const markersRef = useRef<L.LayerGroup | null>(null);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
-
-    const map = L.map(containerRef.current, {
-      center: MAP_CENTER,
-      zoom: MAP_ZOOM,
-      zoomControl: false,
-    });
-
-    // Add OpenStreetMap tiles
+    const map = L.map(containerRef.current, { center: MAP_CENTER, zoom: MAP_ZOOM, zoomControl: false });
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
       maxZoom: 19,
     }).addTo(map);
-
-    // Zoom control bottom-right
     L.control.zoom({ position: 'bottomright' }).addTo(map);
-
     mapRef.current = map;
     markersRef.current = L.layerGroup().addTo(map);
 
-    // Add landmarks
     landmarks.forEach((lm) => {
       const color = lm.type === 'park' ? '#16a34a' : lm.type === 'school' ? '#dc2626' : lm.type === 'mosque' ? '#7c3aed' : '#2563eb';
       const icon = L.divIcon({
@@ -62,56 +58,59 @@ const MapView = ({ searchQuery, selectedBlock, onPlotSelect }: MapViewProps) => 
       L.marker([lm.lat, lm.lng], { icon, interactive: false }).addTo(map);
     });
 
-    return () => {
-      map.remove();
-      mapRef.current = null;
-    };
+    return () => { map.remove(); mapRef.current = null; };
   }, []);
 
-  // Update markers when filters change
   useEffect(() => {
     if (!markersRef.current || !mapRef.current) return;
     markersRef.current.clearLayers();
 
-    const filteredPlots = plotData.filter((plot) => {
-      const matchesSearch = !searchQuery || 
-        plot.block.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        plot.plotNumber.includes(searchQuery) ||
-        plot.size.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        plot.price.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesBlock = !selectedBlock || plot.block === selectedBlock;
-      return matchesSearch && matchesBlock;
+    const filtered = properties.filter(p => {
+      if (!p.latitude || !p.longitude) return false;
+      if (!searchQuery) return true;
+      const q = searchQuery.toLowerCase();
+      return p.title.toLowerCase().includes(q) || p.location?.toLowerCase().includes(q) || p.area?.toLowerCase().includes(q);
     });
 
-    filteredPlots.forEach((plot) => {
-      const color = statusColors[plot.status];
+    filtered.forEach((prop) => {
+      const color = prop.listing_type === 'buy' ? '#22c55e' : '#ea7a1d';
+      const priceFormatted = prop.listing_type === 'rent'
+        ? `PKR ${(prop.price / 1000).toFixed(0)}K/mo`
+        : prop.price >= 10000000
+          ? `PKR ${(prop.price / 10000000).toFixed(1)} Cr`
+          : `PKR ${(prop.price / 100000).toFixed(1)} Lac`;
+
       const icon = L.divIcon({
         className: '',
-        html: `<div class="price-marker ${plot.status}">${plot.size} @ ${plot.price}</div>`,
-        iconSize: [140, 28],
-        iconAnchor: [70, 14],
+        html: `<div class="price-marker ${prop.listing_type === 'buy' ? 'available' : 'reserved'}">${priceFormatted}</div>`,
+        iconSize: [130, 28],
+        iconAnchor: [65, 14],
       });
 
-      const marker = L.marker([plot.lat, plot.lng], { icon }).addTo(markersRef.current!);
-      
+      const marker = L.marker([prop.latitude!, prop.longitude!], { icon }).addTo(markersRef.current!);
+      const dealerPhone = prop.profiles?.phone || '923001234567';
+
       marker.bindPopup(`
-        <div style="min-width:180px">
-          <div style="font-weight:700;font-size:15px;margin-bottom:6px;color:${color}">Block ${plot.block} - Plot ${plot.plotNumber}</div>
-          <div style="display:grid;grid-template-columns:auto 1fr;gap:4px 12px;font-size:13px;">
-            <span style="color:#888">Size:</span><span style="font-weight:600">${plot.size}</span>
-            <span style="color:#888">Price:</span><span style="font-weight:600">${plot.price}</span>
-            <span style="color:#888">Status:</span><span style="font-weight:600;color:${color}">${plot.status.charAt(0).toUpperCase() + plot.status.slice(1)}</span>
+        <div style="min-width:200px">
+          <div style="font-weight:700;font-size:14px;margin-bottom:4px">${prop.title}</div>
+          <div style="font-size:12px;color:#666;margin-bottom:8px">${prop.location || ''}</div>
+          <div style="display:grid;grid-template-columns:auto 1fr;gap:3px 10px;font-size:12px;">
+            <span style="color:#888">Price:</span><span style="font-weight:700;color:${color}">${priceFormatted}</span>
+            <span style="color:#888">Area:</span><span>${prop.area || 'N/A'}</span>
+            <span style="color:#888">Type:</span><span>${prop.listing_type === 'buy' ? 'For Sale' : 'For Rent'}</span>
+            ${prop.bedrooms > 0 ? `<span style="color:#888">Beds:</span><span>${prop.bedrooms}</span>` : ''}
           </div>
-          <div style="margin-top:10px;display:flex;gap:6px">
-            <a href="#" style="flex:1;text-align:center;padding:6px 0;background:${color};color:#fff;border-radius:6px;text-decoration:none;font-size:12px;font-weight:600">Inquire</a>
-            <a href="https://wa.me/923001234567?text=Interested in Block ${plot.block} Plot ${plot.plotNumber}" target="_blank" style="flex:1;text-align:center;padding:6px 0;background:#25d366;color:#fff;border-radius:6px;text-decoration:none;font-size:12px;font-weight:600">WhatsApp</a>
+          <div style="margin-top:8px;font-size:11px;color:#888">${prop.profiles?.company_name || prop.profiles?.full_name || ''}</div>
+          <div style="margin-top:8px;display:flex;gap:6px">
+            <a href="https://wa.me/${dealerPhone.replace(/[^0-9]/g, '')}?text=Interested in ${encodeURIComponent(prop.title)}" target="_blank" style="flex:1;text-align:center;padding:6px 0;background:#25d366;color:#fff;border-radius:6px;text-decoration:none;font-size:12px;font-weight:600">WhatsApp</a>
+            <a href="tel:${dealerPhone}" style="flex:1;text-align:center;padding:6px 0;background:${color};color:#fff;border-radius:6px;text-decoration:none;font-size:12px;font-weight:600">Call</a>
           </div>
         </div>
       `);
 
-      marker.on('click', () => onPlotSelect(plot));
+      marker.on('click', () => onPropertySelect(prop));
     });
-  }, [searchQuery, selectedBlock, onPlotSelect]);
+  }, [searchQuery, properties, onPropertySelect]);
 
   return <div ref={containerRef} className="w-full h-full" />;
 };

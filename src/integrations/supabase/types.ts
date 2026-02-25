@@ -14,16 +14,313 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      dealer_subscriptions: {
+        Row: {
+          created_at: string | null
+          dealer_id: string
+          expires_at: string | null
+          id: string
+          is_active: boolean | null
+          package_id: string
+          starts_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          dealer_id: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          package_id: string
+          starts_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          dealer_id?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean | null
+          package_id?: string
+          starts_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dealer_subscriptions_dealer_id_fkey"
+            columns: ["dealer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "dealer_subscriptions_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "subscription_packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      inquiries: {
+        Row: {
+          created_at: string | null
+          email: string | null
+          id: string
+          message: string | null
+          name: string
+          phone: string | null
+          property_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          message?: string | null
+          name: string
+          phone?: string | null
+          property_id: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string | null
+          id?: string
+          message?: string | null
+          name?: string
+          phone?: string | null
+          property_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "inquiries_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          bio: string | null
+          company_name: string | null
+          created_at: string | null
+          email: string
+          full_name: string | null
+          id: string
+          is_active: boolean | null
+          logo_url: string | null
+          phone: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          bio?: string | null
+          company_name?: string | null
+          created_at?: string | null
+          email: string
+          full_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          phone?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          bio?: string | null
+          company_name?: string | null
+          created_at?: string | null
+          email?: string
+          full_name?: string | null
+          id?: string
+          is_active?: boolean | null
+          logo_url?: string | null
+          phone?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      properties: {
+        Row: {
+          area: string | null
+          bathrooms: number | null
+          bedrooms: number | null
+          city: string | null
+          created_at: string | null
+          dealer_id: string
+          description: string | null
+          id: string
+          images: string[] | null
+          inquiries_count: number | null
+          is_active: boolean | null
+          is_featured: boolean | null
+          latitude: number | null
+          listing_type: string
+          location: string | null
+          longitude: number | null
+          price: number
+          property_type: string
+          title: string
+          updated_at: string | null
+          views_count: number | null
+        }
+        Insert: {
+          area?: string | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          city?: string | null
+          created_at?: string | null
+          dealer_id: string
+          description?: string | null
+          id?: string
+          images?: string[] | null
+          inquiries_count?: number | null
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          latitude?: number | null
+          listing_type?: string
+          location?: string | null
+          longitude?: number | null
+          price?: number
+          property_type?: string
+          title: string
+          updated_at?: string | null
+          views_count?: number | null
+        }
+        Update: {
+          area?: string | null
+          bathrooms?: number | null
+          bedrooms?: number | null
+          city?: string | null
+          created_at?: string | null
+          dealer_id?: string
+          description?: string | null
+          id?: string
+          images?: string[] | null
+          inquiries_count?: number | null
+          is_active?: boolean | null
+          is_featured?: boolean | null
+          latitude?: number | null
+          listing_type?: string
+          location?: string | null
+          longitude?: number | null
+          price?: number
+          property_type?: string
+          title?: string
+          updated_at?: string | null
+          views_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "properties_dealer_id_fkey"
+            columns: ["dealer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      property_views: {
+        Row: {
+          created_at: string | null
+          id: string
+          property_id: string
+          viewer_ip: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          property_id: string
+          viewer_ip?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          property_id?: string
+          viewer_ip?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "property_views_property_id_fkey"
+            columns: ["property_id"]
+            isOneToOne: false
+            referencedRelation: "properties"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      subscription_packages: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          duration_days: number | null
+          features: Json | null
+          id: string
+          is_active: boolean | null
+          max_properties: number | null
+          name: string
+          price: number | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          duration_days?: number | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          max_properties?: number | null
+          name: string
+          price?: number | null
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          duration_days?: number | null
+          features?: Json | null
+          id?: string
+          is_active?: boolean | null
+          max_properties?: number | null
+          name?: string
+          price?: number | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_dealer_property: {
+        Args: { _property_id: string; _user_id: string }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "superadmin" | "dealer"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +447,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["superadmin", "dealer"],
+    },
   },
 } as const
